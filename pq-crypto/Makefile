@@ -18,12 +18,13 @@ OBJS=$(SRCS:.c=.o)
 BCS_11=pq_random.bc
 BCS1=$(addprefix $(BITCODE_DIR), $(BCS_11))
 
+# Explicitly specify `try_include_asm` target for KEMs that attempt to include assembly
 .PHONY : all
 all: $(OBJS)
 	$(MAKE) -C bike_r1
 	$(MAKE) -C bike_r2
 	$(MAKE) -C sike_r1
-	$(MAKE) -C sike_r2
+	$(MAKE) -C sike_r2 try_include_asm
 	$(MAKE) -C kyber_r2
 	$(MAKE) -C kyber_90s_r2
 
@@ -63,3 +64,4 @@ clean: decruft
 	$(MAKE) -C kyber_90s_r2 decruft
 
 include ../s2n.mk
+include ./s2n_pq_asm.mk

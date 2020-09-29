@@ -72,13 +72,13 @@ typedef uint32_t hdigit_t; // Unsigned 32-bit digit
 #define RADIX64 64
 
 // Extended datatype support
-#if defined(S2N_NO_PQ_ASM)
-typedef uint64_t uint128_t[2];
-#elif (TARGET == TARGET_AMD64 && OS_TARGET == OS_LINUX)
+#if (TARGET == TARGET_AMD64 && OS_TARGET == OS_LINUX)
 typedef unsigned uint128_t __attribute__((mode(TI)));
 #elif (TARGET == TARGET_ARM64 && OS_TARGET == OS_LINUX)
 typedef unsigned uint128_t __attribute__((mode(TI)));
 #elif (TARGET == TARGET_AMD64 && OS_TARGET == OS_WIN)
+typedef uint64_t uint128_t[2];
+#else
 typedef uint64_t uint128_t[2];
 #endif
 
@@ -109,38 +109,7 @@ unsigned int is_digit_lessthan_ct(digit_t x, digit_t y) { // Is x < y?
 
 /********************** Macros for platform-dependent operations **********************/
 
-#if defined(S2N_NO_PQ_ASM) || (TARGET == TARGET_ARM)
-
-// Digit multiplication
-#define MUL(multiplier, multiplicand, hi, lo) \
-    digit_x_digit((multiplier), (multiplicand), &(lo));
-
-// Digit addition with carry
-#define ADDC(carryIn, addend1, addend2, carryOut, sumOut)                                                           \
-    {                                                                                                               \
-        digit_t tempReg = (addend1) + (digit_t)(carryIn);                                                           \
-        (sumOut) = (addend2) + tempReg;                                                                             \
-        (carryOut) = (is_digit_lessthan_ct(tempReg, (digit_t)(carryIn)) | is_digit_lessthan_ct((sumOut), tempReg)); \
-    }
-
-// Digit subtraction with borrow
-#define SUBC(borrowIn, minuend, subtrahend, borrowOut, differenceOut)                                                       \
-    {                                                                                                                       \
-        digit_t tempReg = (minuend) - (subtrahend);                                                                         \
-        unsigned int borrowReg = (is_digit_lessthan_ct((minuend), (subtrahend)) | ((borrowIn) &is_digit_zero_ct(tempReg))); \
-        (differenceOut) = tempReg - (digit_t)(borrowIn);                                                                    \
-        (borrowOut) = borrowReg;                                                                                            \
-    }
-
-// Shift right with flexible datatype
-#define SHIFTR(highIn, lowIn, shift, shiftOut, DigitSize) \
-    (shiftOut) = ((lowIn) >> (shift)) ^ ((highIn) << (DigitSize - (shift)));
-
-// Shift left with flexible datatype
-#define SHIFTL(highIn, lowIn, shift, shiftOut, DigitSize) \
-    (shiftOut) = ((highIn) << (shift)) ^ ((lowIn) >> (DigitSize - (shift)));
-
-#elif (TARGET == TARGET_AMD64 && OS_TARGET == OS_WIN)
+#if (TARGET == TARGET_AMD64 && OS_TARGET == OS_WIN)
 
 // Digit multiplication
 #define MUL(multiplier, multiplicand, hi, lo) \
@@ -212,6 +181,37 @@ unsigned int is_digit_lessthan_ct(digit_t x, digit_t y) { // Is x < y?
 // Digit shift left
 #define SHIFTL(highIn, lowIn, shift, shiftOut, DigitSize) \
     (shiftOut) = ((highIn) << (shift)) ^ ((lowIn) >> (RADIX - (shift)));
+
+#else
+
+// Digit multiplication
+#define MUL(multiplier, multiplicand, hi, lo) \
+    digit_x_digit((multiplier), (multiplicand), &(lo));
+
+// Digit addition with carry
+#define ADDC(carryIn, addend1, addend2, carryOut, sumOut)                                                           \
+    {                                                                                                               \
+        digit_t tempReg = (addend1) + (digit_t)(carryIn);                                                           \
+        (sumOut) = (addend2) + tempReg;                                                                             \
+        (carryOut) = (is_digit_lessthan_ct(tempReg, (digit_t)(carryIn)) | is_digit_lessthan_ct((sumOut), tempReg)); \
+    }
+
+// Digit subtraction with borrow
+#define SUBC(borrowIn, minuend, subtrahend, borrowOut, differenceOut)                                                       \
+    {                                                                                                                       \
+        digit_t tempReg = (minuend) - (subtrahend);                                                                         \
+        unsigned int borrowReg = (is_digit_lessthan_ct((minuend), (subtrahend)) | ((borrowIn) &is_digit_zero_ct(tempReg))); \
+        (differenceOut) = tempReg - (digit_t)(borrowIn);                                                                    \
+        (borrowOut) = borrowReg;                                                                                            \
+    }
+
+// Shift right with flexible datatype
+#define SHIFTR(highIn, lowIn, shift, shiftOut, DigitSize) \
+    (shiftOut) = ((lowIn) >> (shift)) ^ ((highIn) << (DigitSize - (shift)));
+
+// Shift left with flexible datatype
+#define SHIFTL(highIn, lowIn, shift, shiftOut, DigitSize) \
+    (shiftOut) = ((highIn) << (shift)) ^ ((lowIn) >> (DigitSize - (shift)));
 
 #endif
 

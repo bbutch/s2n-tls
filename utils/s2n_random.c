@@ -27,10 +27,7 @@
 #include <errno.h>
 #include <time.h>
 
-#include "utils/s2n_compiler.h"
-
-/* clang can define gcc version to be < 4.3, but cpuid.h exists for most releases */
-#if ((defined(__x86_64__) || defined(__i386__)) && (defined(__clang__) || S2N_GCC_VERSION_AT_LEAST(4,3,0)))
+#if defined(S2N_CPUID_AVAILABLE)
 #include <cpuid.h>
 #endif
 
@@ -330,7 +327,7 @@ S2N_RESULT s2n_set_private_drbg_for_test(struct s2n_drbg drbg)
 
 bool s2n_cpu_supports_rdrand()
 {
-#if ((defined(__x86_64__) || defined(__i386__)) && (defined(__clang__) || S2N_GCC_VERSION_AT_LEAST(4,3,0)))
+#if defined(S2N_CPUID_AVAILABLE)
     uint32_t eax, ebx, ecx, edx;
     if (!__get_cpuid(1, &eax, &ebx, &ecx, &edx)) {
         return false;
