@@ -11,12 +11,8 @@
 // Output: c in [0, 2*p434-1]
 void fpadd434(const digit_t *a, const digit_t *b, digit_t *c) {
 #if !defined(S2N_NO_PQ_ASM)
-    if (s2n_check_sike434_r2_asm_compatibility()) {
-        fpadd434_asm(a, b, c);
-        return;
-    }
-#endif /* S2N_NO_PQ_ASM */
-
+    fpadd434_asm(a, b, c);
+#else
 	unsigned int i, carry = 0;
 	digit_t mask;
 
@@ -34,6 +30,7 @@ void fpadd434(const digit_t *a, const digit_t *b, digit_t *c) {
 	for (i = 0; i < NWORDS_FIELD; i++) {
 		ADDC(carry, c[i], ((const digit_t *) p434x2)[i] & mask, carry, c[i]);
 	}
+#endif
 }
 
 // Modular subtraction, c = a-b mod p434.
@@ -41,12 +38,8 @@ void fpadd434(const digit_t *a, const digit_t *b, digit_t *c) {
 // Output: c in [0, 2*p434-1]
 void fpsub434(const digit_t *a, const digit_t *b, digit_t *c) {
 #if !defined(S2N_NO_PQ_ASM)
-    if (s2n_check_sike434_r2_asm_compatibility()) {
-        fpsub434_asm(a, b, c);
-        return;
-    }
-#endif /* S2N_NO_PQ_ASM */
-
+    fpsub434_asm(a, b, c);
+#else
 	unsigned int i, borrow = 0;
 	digit_t mask;
 
@@ -59,6 +52,7 @@ void fpsub434(const digit_t *a, const digit_t *b, digit_t *c) {
 	for (i = 0; i < NWORDS_FIELD; i++) {
 		ADDC(borrow, c[i], ((const digit_t *) p434x2)[i] & mask, borrow, c[i]);
 	}
+#endif
 }
 
 // Modular negation, a = -a mod p434.
@@ -138,13 +132,9 @@ void digit_x_digit(const digit_t a, const digit_t b, digit_t *c) {
 // Multiprecision comba multiply, c = a*b, where lng(a) = lng(b) = nwords.
 void mp_mul(const digit_t *a, const digit_t *b, digit_t *c, const unsigned int nwords) {
 #if !defined(S2N_NO_PQ_ASM)
-    if (s2n_check_sike434_r2_asm_compatibility()) {
-        UNREFERENCED_PARAMETER(nwords);
-        mul434_asm(a, b, c);
-        return;
-    }
-#endif /* S2N_NO_PQ_ASM */
-
+    UNREFERENCED_PARAMETER(nwords);
+    mul434_asm(a, b, c);
+#else
 	unsigned int i, j;
 	digit_t t = 0, u = 0, v = 0, UV[2];
 	unsigned int carry = 0;
@@ -175,6 +165,7 @@ void mp_mul(const digit_t *a, const digit_t *b, digit_t *c, const unsigned int n
 		t = 0;
 	}
 	c[2 * nwords - 1] = v;
+#endif
 }
 
 // Efficient Montgomery reduction using comba and exploiting the special form of the prime p434.
@@ -183,12 +174,8 @@ void mp_mul(const digit_t *a, const digit_t *b, digit_t *c, const unsigned int n
 // ma is assumed to be in Montgomery representation.
 void rdc_mont(const digit_t *ma, digit_t *mc) {
 #if !defined(S2N_NO_PQ_ASM)
-    if (s2n_check_sike434_r2_asm_compatibility()) {
-        rdc434_asm(ma, mc);
-        return;
-    }
-#endif /* S2N_NO_PQ_ASM */
-
+    rdc434_asm(ma, mc);
+#else
 	unsigned int i, j, carry, count = p434_ZERO_WORDS;
 	digit_t UV[2], t = 0, u = 0, v = 0;
 
@@ -236,4 +223,5 @@ void rdc_mont(const digit_t *ma, digit_t *mc) {
 	}
 	ADDC(0, v, ma[2 * NWORDS_FIELD - 1], carry, v);
 	mc[NWORDS_FIELD - 1] = v;
+#endif
 }

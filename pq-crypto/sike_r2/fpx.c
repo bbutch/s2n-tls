@@ -142,13 +142,10 @@ void fp2correction(f2elm_t *a) {
 // Multiprecision addition, c = a+b.
 __inline static void mp_addfast(const digit_t *a, const digit_t *b, digit_t *c) {
 #if !defined(S2N_NO_PQ_ASM)
-    if (s2n_check_sike434_r2_asm_compatibility()) {
-        mp_add_asm(a, b, c);
-        return;
-    }
-#endif /* S2N_NO_PQ_ASM */
-
+    mp_add_asm(a, b, c);
+#else
 	mp_add(a, b, c, NWORDS_FIELD);
+#endif
 }
 
 // GF(p^2) squaring using Montgomery arithmetic, c = a^2 in GF(p^2).
@@ -177,11 +174,8 @@ unsigned int mp_sub(const digit_t *a, const digit_t *b, digit_t *c, const unsign
 // Multiprecision subtraction followed by addition with p*2^MAXBITS_FIELD, c = a-b+(p*2^MAXBITS_FIELD) if a-b < 0, otherwise c=a-b.
 __inline static void mp_subaddfast(const digit_t *a, const digit_t *b, digit_t *c) {
 #if !defined(S2N_NO_PQ_ASM)
-    if (s2n_check_sike434_r2_asm_compatibility()) {
-        mp_subaddx2_asm(a, b, c);
-        return;
-    }
-#endif /* S2N_NO_PQ_ASM */
+    mp_subaddx2_asm(a, b, c);
+#else
 
 	felm_t t1;
 
@@ -189,19 +183,17 @@ __inline static void mp_subaddfast(const digit_t *a, const digit_t *b, digit_t *
 	for (int i = 0; i < NWORDS_FIELD; i++)
 		t1[i] = ((const digit_t *) PRIME)[i] & mask;
 	mp_addfast((digit_t *) &c[NWORDS_FIELD], t1, (digit_t *) &c[NWORDS_FIELD]);
+#endif
 }
 
 // Multiprecision subtraction, c = c-a-b, where lng(a) = lng(b) = 2*NWORDS_FIELD.
 __inline static void mp_dblsubfast(const digit_t *a, const digit_t *b, digit_t *c) {
 #if !defined(S2N_NO_PQ_ASM)
-    if (s2n_check_sike434_r2_asm_compatibility()) {
-        mp_dblsubx2_asm(a, b, c);
-        return;
-    }
-#endif /* S2N_NO_PQ_ASM */
-
+    mp_dblsubx2_asm(a, b, c);
+#else
 	mp_sub(c, a, c, 2 * NWORDS_FIELD);
 	mp_sub(c, b, c, 2 * NWORDS_FIELD);
+#endif
 }
 
 // GF(p^2) multiplication using Montgomery arithmetic, c = a*b in GF(p^2).

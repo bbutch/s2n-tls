@@ -38,7 +38,24 @@
 #include "tls/s2n_tls13.h"
 #include "utils/s2n_safety.h"
 
+#include <time.h>
+
 #define S2N_MAX_ECC_CURVE_NAME_LENGTH 10
+
+static uint64_t elapsed_nanoseconds(struct timespec *start, struct timespec *end) {
+    uint64_t sec_delta = (uint64_t)end->tv_sec - (uint64_t)start->tv_sec;
+    uint64_t nsec_delta = (uint64_t)end->tv_nsec - (uint64_t)start->tv_nsec;
+
+    return (sec_delta * 1000000000ull) + nsec_delta;
+}
+
+static double nano_to_milli(uint64_t nanoseconds) {
+    return nanoseconds / (double)1000000.0;
+}
+
+int compare(const void *a, const void *b) {
+    return ( *(const uint64_t *)a - *(const uint64_t *)b );
+}
 
 void usage()
 {
@@ -256,6 +273,9 @@ int main(int argc, char *const *argv)
     char keyshares[S2N_ECC_EVP_SUPPORTED_CURVES_COUNT][S2N_MAX_ECC_CURVE_NAME_LENGTH];
     char *input = NULL;
     char *token = NULL;
+    uint32_t num_benchmark_rounds = 0;
+    char *benchmark_char_ptr = NULL;
+    const char *benchmark_filename = NULL;
 
     static struct option long_options[] = {
         {"alpn", required_argument, 0, 'a'},
@@ -278,11 +298,13 @@ int main(int argc, char *const *argv)
         {"tls13", no_argument, 0, '3'},
         {"keyshares", required_argument, 0, 'K'},
         {"non-blocking", no_argument, 0, 'B'},
+        {"benchmark", required_argument, 0, 'b'},
+        {"benchmarkfile", required_argument, 0, 'F'},
     };
 
     while (1) {
         int option_index = 0;
-        int c = getopt_long(argc, argv, "a:c:ehn:sf:d:l:k:D:t:irTCK:", long_options, &option_index);
+        int c = getopt_long(argc, argv, "a:c:ehn:sf:d:l:k:D:t:irTCK:b:", long_options, &option_index);
         if (c == -1) {
             break;
         }
@@ -361,11 +383,27 @@ int main(int argc, char *const *argv)
         case 'B':
             non_blocking = 1;
             break;
+        case 'b':
+            num_benchmark_rounds = strtoul(optarg, &benchmark_char_ptr, 10);
+            break;
+        case 'F':
+            benchmark_filename = optarg;
+            break;
         case '?':
         default:
             usage();
             break;
         }
+    }
+
+    if (benchmark_filename == NULL) {
+        printf("Must supply filename to output benchmark results (-F <filename>)\n");
+        exit(1);
+    }
+
+    if (num_benchmark_rounds == 0) {
+        printf("Must supply non-zero number of rounds to benchmark (-b <num_rounds>)\n");
+        exit(1);
     }
 
     if (optind < argc) {
@@ -406,7 +444,17 @@ int main(int argc, char *const *argv)
         exit(1);
     }
 
-    do {
+    const char *negotiated_cipher = NULL;
+    const char *negotiated_curve = NULL;
+    const char *negotiated_kem = NULL;
+    const char *negotiated_kem_group = NULL;
+    uint8_t negotiated_tls_version = 0;
+
+    struct timespec start = { 0 };
+    struct timespec end = { 0 };
+    uint64_t *benchmark_results = (uint64_t *)malloc(num_benchmark_rounds * sizeof(uint64_t));
+
+    for (size_t benchmark_round = 0; benchmark_round < num_benchmark_rounds; benchmark_round++) {
         int connected = 0;
         for (ai = ai_list; ai != NULL; ai = ai->ai_next) {
             if ((sockfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) == -1) {
@@ -492,13 +540,78 @@ int main(int argc, char *const *argv)
             GUARD_EXIT(s2n_connection_set_session(conn, session_state, session_state_length), "Error setting session state in connection");
         }
 
+        clock_gettime(CLOCK_MONOTONIC, &start);
         /* See echo.c */
         if (negotiate(conn, sockfd) != 0) {
             /* Error is printed in negotiate */
             S2N_ERROR_PRESERVE_ERRNO();
         }
+        clock_gettime(CLOCK_MONOTONIC, &end);
+        uint64_t elapsed = elapsed_nanoseconds(&start, &end);
+        benchmark_results[benchmark_round] = elapsed;
 
-        printf("Connected to %s:%s\n", host, port);
+        if (benchmark_round == 0) {
+            negotiated_cipher = s2n_connection_get_cipher(conn);
+            notnull_check(negotiated_cipher);
+            negotiated_curve = s2n_connection_get_curve(conn);
+            notnull_check(negotiated_curve);
+            negotiated_kem = s2n_connection_get_kem_name(conn);
+            notnull_check(negotiated_kem);
+            negotiated_kem_group = s2n_connection_get_kem_group_name(conn);
+            notnull_check(negotiated_kem_group);
+            negotiated_tls_version = conn->actual_protocol_version;
+
+            if (negotiated_tls_version == S2N_TLS13) {
+                printf("TLS version: 1.3\n");
+            } else if (negotiated_tls_version == S2N_TLS12) {
+                printf("TLS version: 1.2\n");
+            } else {
+                printf("Unsupported TLS version\n");
+                exit(1);
+            }
+            printf("Security Policy: %s\n", cipher_prefs);
+            printf("Cipher negotiated: %s\n", negotiated_cipher);
+            printf("Curve: %s\n", negotiated_curve);
+            printf("KEM: %s\n", negotiated_kem);
+            printf("KEM Group: %s\n", negotiated_kem_group);
+#if defined(S2N_NO_PQ_ASM)
+            printf("PQ assembly is DISABLED\n");
+#else
+            printf("PQ assembly is ENABLED\n");
+#endif
+        } else {
+            if (s2n_connection_get_cipher(conn) != negotiated_cipher) {
+                printf("Unexpected cipher negotiated in round %lu. Round 0 cipher: %s, round %lu cipher: %s\n",
+                        benchmark_round, negotiated_cipher, benchmark_round, s2n_connection_get_cipher(conn));
+                exit(1);
+            }
+
+            if (s2n_connection_get_curve(conn) != negotiated_curve) {
+                printf("Unexpected curve negotiated in round %lu. Round 0 curve: %s, round %lu curve: %s\n",
+                        benchmark_round, negotiated_curve, benchmark_round, s2n_connection_get_curve(conn));
+                exit(1);
+            }
+
+            if (s2n_connection_get_kem_name(conn) != negotiated_kem) {
+                printf("Unexpected KEM negotiated in round %lu. Round 0 KEM: %s, round %lu KEM: %s\n",
+                        benchmark_round, negotiated_kem, benchmark_round, s2n_connection_get_kem_name(conn));
+                exit(1);
+            }
+
+            if (s2n_connection_get_kem_group_name(conn) != negotiated_kem_group) {
+                printf("Unexpected KEM group negotiated in round %lu. Round 0 KEM group: %s, round %lu KEM group: %s\n",
+                        benchmark_round, negotiated_kem_group, benchmark_round,
+                        s2n_connection_get_kem_group_name(conn));
+                exit(1);
+            }
+
+            if (conn->actual_protocol_version != negotiated_tls_version) {
+                printf("Unexpected TLS version negotiated in round %lu. Round 0 TLS version: %d, round %lu TLS version: %d\n",
+                        benchmark_round, negotiated_tls_version, benchmark_round,
+                        conn->actual_protocol_version);
+                exit(1);
+            }
+        }
 
         /* Save session state from connection if reconnect is enabled */
         if (reconnect > 0) {
@@ -534,8 +647,50 @@ int main(int argc, char *const *argv)
 
         close(sockfd);
         reconnect--;
+    }
 
-    } while (reconnect >= 0);
+    qsort(benchmark_results, num_benchmark_rounds, sizeof(uint64_t), compare);
+
+    printf("Number of rounds: %u\n", num_benchmark_rounds);
+
+    double avg = 0;
+    for (size_t i = 0; i < num_benchmark_rounds; i++) {
+        avg += nano_to_milli(benchmark_results[i]);
+    }
+
+    avg /= (double) num_benchmark_rounds;
+
+    double p0 = nano_to_milli(benchmark_results[0]);
+    double p50 = nano_to_milli(benchmark_results[(size_t) (num_benchmark_rounds / 2)]);
+    double p90 = nano_to_milli(benchmark_results[(size_t) (num_benchmark_rounds * .9)]);
+    double p95 = nano_to_milli(benchmark_results[(size_t) (num_benchmark_rounds * .95)]);
+    double p99 = nano_to_milli(benchmark_results[(size_t) (num_benchmark_rounds * .99)]);
+    double p100 = nano_to_milli(benchmark_results[num_benchmark_rounds - 1]);
+
+    printf("P0: %.06f\nP50 %.06f\nP90: %.06f\np95: %.06f\np99: %.06f\nP100: %0.6f\nAverage: %0.6f\n",
+            p0, p50, p90, p95, p99, p100, avg);
+
+    FILE *output_file = fopen(benchmark_filename, "w+");
+
+    fprintf(output_file, "P0: %.06f\nP50 %.06f\nP90: %.06f\np95: %.06f\np99: %.06f\n"
+                         "P100: %0.6f\nAverage: %0.6f\n--------------------------------------------\n",
+                         p0, p50, p90, p95, p99, p100, avg);
+
+#if defined(S2N_NO_PQ_ASM)
+    int pq_asm_enabled = 0;
+#else
+    int pq_asm_enabled = 1;
+#endif
+
+    fprintf(output_file, "protocol_version, cipher, curve, kem, kem_group, pq_asm_enabled, handshake_time\n");
+    for (size_t result_i = 0; result_i < num_benchmark_rounds; result_i++) {
+        fprintf(output_file, "%d, %s, %s, %s, %s, %d, %.06f\n", negotiated_tls_version, negotiated_cipher,
+                negotiated_curve, negotiated_kem, negotiated_kem_group, pq_asm_enabled,
+                nano_to_milli(benchmark_results[result_i]));
+    }
+
+    fclose(output_file);
+    free(benchmark_results);
 
     GUARD_EXIT(s2n_cleanup(), "Error running s2n_cleanup()");
 

@@ -86,57 +86,6 @@ int negotiate(struct s2n_connection *conn, int fd)
         }
     }
 
-    /* Now that we've negotiated, print some parameters */
-    int client_hello_version;
-    int client_protocol_version;
-    int server_protocol_version;
-    int actual_protocol_version;
-
-    if ((client_hello_version = s2n_connection_get_client_hello_version(conn)) < 0) {
-        fprintf(stderr, "Could not get client hello version\n");
-        S2N_ERROR(S2N_ERR_CLIENT_HELLO_VERSION);
-    }
-    if ((client_protocol_version = s2n_connection_get_client_protocol_version(conn)) < 0) {
-        fprintf(stderr, "Could not get client protocol version\n");
-        S2N_ERROR(S2N_ERR_CLIENT_PROTOCOL_VERSION);
-    }
-    if ((server_protocol_version = s2n_connection_get_server_protocol_version(conn)) < 0) {
-        fprintf(stderr, "Could not get server protocol version\n");
-        S2N_ERROR(S2N_ERR_SERVER_PROTOCOL_VERSION);
-    }
-    if ((actual_protocol_version = s2n_connection_get_actual_protocol_version(conn)) < 0) {
-        fprintf(stderr, "Could not get actual protocol version\n");
-        S2N_ERROR(S2N_ERR_ACTUAL_PROTOCOL_VERSION);
-    }
-    printf("CONNECTED:\n");
-    printf("Client hello version: %d\n", client_hello_version);
-    printf("Client protocol version: %d\n", client_protocol_version);
-    printf("Server protocol version: %d\n", server_protocol_version);
-    printf("Actual protocol version: %d\n", actual_protocol_version);
-
-    if (s2n_get_server_name(conn)) {
-        printf("Server name: %s\n", s2n_get_server_name(conn));
-    }
-
-    if (s2n_get_application_protocol(conn)) {
-        printf("Application protocol: %s\n", s2n_get_application_protocol(conn));
-    }
-
-    printf("Curve: %s\n", s2n_connection_get_curve(conn));
-    printf("KEM: %s\n", s2n_connection_get_kem_name(conn));
-    printf("KEM Group: %s\n", s2n_connection_get_kem_group_name(conn));
-
-    uint32_t length;
-    const uint8_t *status = s2n_connection_get_ocsp_response(conn, &length);
-    if (status && length > 0) {
-        fprintf(stderr, "OCSP response received, length %u\n", length);
-    }
-
-    printf("Cipher negotiated: %s\n", s2n_connection_get_cipher(conn));
-    if (s2n_connection_is_session_resumed(conn)) {
-        printf("Resumed session\n");
-    }
-
     return 0;
 }
 
