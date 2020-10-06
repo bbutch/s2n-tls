@@ -42,7 +42,7 @@
 
 #define S2N_MAX_ECC_CURVE_NAME_LENGTH 10
 
-extern struct timespec start;
+//extern struct timespec start;
 extern struct timespec end;
 
 static uint64_t elapsed_nanoseconds(struct timespec *start_, struct timespec *end_) {
@@ -452,6 +452,8 @@ int main(int argc, char *const *argv)
     const char *negotiated_kem = NULL;
     const char *negotiated_kem_group = NULL;
     uint8_t negotiated_tls_version = 0;
+
+    struct timespec start;
 
     uint64_t *benchmark_results = (uint64_t *)malloc(num_benchmark_rounds * sizeof(uint64_t));
 
