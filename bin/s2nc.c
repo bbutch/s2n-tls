@@ -42,7 +42,7 @@
 
 #define S2N_MAX_ECC_CURVE_NAME_LENGTH 10
 
-//extern struct timespec start;
+extern struct timespec start;
 extern struct timespec end;
 
 static uint64_t elapsed_nanoseconds(struct timespec *start_, struct timespec *end_) {
@@ -453,8 +453,6 @@ int main(int argc, char *const *argv)
     const char *negotiated_kem_group = NULL;
     uint8_t negotiated_tls_version = 0;
 
-    struct timespec start;
-
     uint64_t *benchmark_results = (uint64_t *)malloc(num_benchmark_rounds * sizeof(uint64_t));
 
     for (size_t benchmark_round = 0; benchmark_round < num_benchmark_rounds; benchmark_round++) {
@@ -543,7 +541,7 @@ int main(int argc, char *const *argv)
             GUARD_EXIT(s2n_connection_set_session(conn, session_state, session_state_length), "Error setting session state in connection");
         }
 
-        clock_gettime(CLOCK_MONOTONIC, &start);
+//        clock_gettime(CLOCK_MONOTONIC, &start);
         /* See echo.c */
         if (negotiate(conn, sockfd) != 0) {
             /* Error is printed in negotiate */

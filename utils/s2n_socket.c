@@ -39,7 +39,6 @@
 
 int s2n_socket_quickack(struct s2n_connection *conn)
 {
-#ifdef TCP_QUICKACK
     if (!conn->managed_io) {
         return 0;
     }
@@ -54,7 +53,6 @@ int s2n_socket_quickack(struct s2n_connection *conn)
     if (setsockopt(r_io_ctx->fd, IPPROTO_TCP, TCP_QUICKACK, &optval, sizeof(optval)) == 0) {
         r_io_ctx->tcp_quickack_set = 1;
     }
-#endif
 
     return 0;
 }
