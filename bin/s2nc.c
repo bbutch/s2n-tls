@@ -42,9 +42,12 @@
 
 #define S2N_MAX_ECC_CURVE_NAME_LENGTH 10
 
-static uint64_t elapsed_nanoseconds(struct timespec *start, struct timespec *end) {
-    uint64_t sec_delta = (uint64_t)end->tv_sec - (uint64_t)start->tv_sec;
-    uint64_t nsec_delta = (uint64_t)end->tv_nsec - (uint64_t)start->tv_nsec;
+extern struct timespec start;
+extern struct timespec end;
+
+static uint64_t elapsed_nanoseconds(struct timespec *start_, struct timespec *end_) {
+    uint64_t sec_delta = (uint64_t)end_->tv_sec - (uint64_t)start_->tv_sec;
+    uint64_t nsec_delta = (uint64_t)end_->tv_nsec - (uint64_t)start_->tv_nsec;
 
     return (sec_delta * 1000000000ull) + nsec_delta;
 }
@@ -450,8 +453,6 @@ int main(int argc, char *const *argv)
     const char *negotiated_kem_group = NULL;
     uint8_t negotiated_tls_version = 0;
 
-    struct timespec start = { 0 };
-    struct timespec end = { 0 };
     uint64_t *benchmark_results = (uint64_t *)malloc(num_benchmark_rounds * sizeof(uint64_t));
 
     for (size_t benchmark_round = 0; benchmark_round < num_benchmark_rounds; benchmark_round++) {
@@ -540,13 +541,13 @@ int main(int argc, char *const *argv)
             GUARD_EXIT(s2n_connection_set_session(conn, session_state, session_state_length), "Error setting session state in connection");
         }
 
-        clock_gettime(CLOCK_MONOTONIC, &start);
+//        clock_gettime(CLOCK_MONOTONIC, &start);
         /* See echo.c */
         if (negotiate(conn, sockfd) != 0) {
             /* Error is printed in negotiate */
             S2N_ERROR_PRESERVE_ERRNO();
         }
-        clock_gettime(CLOCK_MONOTONIC, &end);
+//        clock_gettime(CLOCK_MONOTONIC, &end);
         uint64_t elapsed = elapsed_nanoseconds(&start, &end);
         benchmark_results[benchmark_round] = elapsed;
 
@@ -569,16 +570,6 @@ int main(int argc, char *const *argv)
                 printf("Unsupported TLS version\n");
                 exit(1);
             }
-            printf("Security Policy: %s\n", cipher_prefs);
-            printf("Cipher negotiated: %s\n", negotiated_cipher);
-            printf("Curve: %s\n", negotiated_curve);
-            printf("KEM: %s\n", negotiated_kem);
-            printf("KEM Group: %s\n", negotiated_kem_group);
-#if defined(S2N_NO_PQ_ASM)
-            printf("PQ assembly is DISABLED\n");
-#else
-            printf("PQ assembly is ENABLED\n");
-#endif
         } else {
             if (s2n_connection_get_cipher(conn) != negotiated_cipher) {
                 printf("Unexpected cipher negotiated in round %lu. Round 0 cipher: %s, round %lu cipher: %s\n",
@@ -650,8 +641,6 @@ int main(int argc, char *const *argv)
     }
 
     qsort(benchmark_results, num_benchmark_rounds, sizeof(uint64_t), compare);
-
-    printf("Number of rounds: %u\n", num_benchmark_rounds);
 
     double avg = 0;
     for (size_t i = 0; i < num_benchmark_rounds; i++) {
