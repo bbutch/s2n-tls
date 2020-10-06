@@ -39,9 +39,15 @@
 
 int s2n_socket_quickack(struct s2n_connection *conn)
 {
-    if (!conn->managed_io) {
-        return 0;
-    }
+
+    int optval = 1;
+
+    struct s2n_socket_write_io_context *w_io_ctx = (struct s2n_socket_write_io_context *) conn->send_io_context;
+    notnull_check(w_io_ctx);
+
+    /* Ignore the return value, if it fails it fails */
+    setsockopt(w_io_ctx->fd, IPPROTO_TCP, TCP_QUICKACK, &optval, sizeof(optval));
+    setsockopt(w_io_ctx->fd, IPPROTO_TCP, TCP_NODELAY, &optval, sizeof(optval));
 
     struct s2n_socket_read_io_context *r_io_ctx = (struct s2n_socket_read_io_context *) conn->recv_io_context;
     if (r_io_ctx->tcp_quickack_set) {
@@ -49,7 +55,6 @@ int s2n_socket_quickack(struct s2n_connection *conn)
     }
 
     /* Ignore the return value, if it fails it fails */
-    int optval = 1;
     if (setsockopt(r_io_ctx->fd, IPPROTO_TCP, TCP_QUICKACK, &optval, sizeof(optval)) == 0) {
         r_io_ctx->tcp_quickack_set = 1;
     }
