@@ -307,6 +307,7 @@ int s2n_hybrid_client_key_send(struct s2n_connection *conn, struct s2n_blob *com
                                     s2n_stuffer_raw_write);
 }
 
+struct timespec end;
 int s2n_client_key_send(struct s2n_connection *conn)
 {
     const struct s2n_kex *key_exchange = conn->secure.cipher_suite->key_exchange_alg;
@@ -315,5 +316,6 @@ int s2n_client_key_send(struct s2n_connection *conn)
     GUARD(s2n_kex_client_key_send(key_exchange, conn, &shared_key));
 
     GUARD(s2n_calculate_keys(conn, &shared_key));
+    clock_gettime(CLOCK_MONOTONIC, &end);
     return 0;
 }

@@ -1112,8 +1112,8 @@ static int s2n_handle_retry_state(struct s2n_connection *conn)
     return 0;
 }
 
-struct timespec start;
-struct timespec end;
+//struct timespec start;
+//struct timespec end;
 
 int s2n_negotiate(struct s2n_connection *conn, s2n_blocked_status *blocked)
 {
@@ -1127,9 +1127,9 @@ int s2n_negotiate(struct s2n_connection *conn, s2n_blocked_status *blocked)
         /* Flush any pending I/O or alert messages */
         GUARD(s2n_flush(conn, blocked));
 
-        if (conn->mode == S2N_CLIENT && ACTIVE_STATE(conn).message_type == TLS_CLIENT_HELLO) {
-            clock_gettime(CLOCK_MONOTONIC, &start);
-        }
+//        if (conn->mode == S2N_CLIENT && ACTIVE_STATE(conn).message_type == TLS_CLIENT_HELLO) {
+//            clock_gettime(CLOCK_MONOTONIC, &start);
+//        }
 
         /* If the handshake was paused, retry the current message */
         if (conn->handshake.paused) {
@@ -1185,9 +1185,9 @@ int s2n_negotiate(struct s2n_connection *conn, s2n_blocked_status *blocked)
             }
         }
 
-        if (conn->mode == S2N_CLIENT && ACTIVE_STATE(conn).message_type == TLS_CLIENT_KEY) {
-            clock_gettime(CLOCK_MONOTONIC, &end);
-        }
+//        if (conn->mode == S2N_CLIENT && ACTIVE_STATE(conn).message_type == TLS_CLIENT_KEY) {
+//            clock_gettime(CLOCK_MONOTONIC, &end);
+//        }
 
         /* If the handshake has just ended, free up memory */
         if (ACTIVE_STATE(conn).writer == 'B') {
