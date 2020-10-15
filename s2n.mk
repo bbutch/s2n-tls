@@ -93,6 +93,10 @@ ifdef S2N_NO_PQ_ASM
 	DEFAULT_CFLAGS += -DS2N_NO_PQ_ASM
 endif
 
+ifdef S2N_ENABLE_X25519_FOR_BENCHMARKING
+	DEFAULT_CFLAGS += -S2N_ENABLE_X25519_FOR_BENCHMARKING
+endif
+
 # All native platforms have execinfo.h, cross-compile targets often don't (android, ARM/alpine)
 ifndef CROSS_COMPILE
 	DEFAULT_CFLAGS += -DS2N_HAVE_EXECINFO

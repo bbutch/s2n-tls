@@ -1,0 +1,5 @@
+- {destination: localhost, host: 127.0.0.1, port: 8888}
+- {destination: us_west_2b, host: 172.31.24.252, port: 8888}
+- {destination: us_west_1a, host: 54.219.21.67, port: 8888}
+- {destination: eu_west_2b, host: 18.134.127.104, port: 8888}
+- {destination: ap_south_1c, host: 15.207.62.158, port: 8888}

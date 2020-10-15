@@ -19,6 +19,7 @@
 #include <poll.h>
 #include <netdb.h>
 
+#include <time.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
@@ -70,7 +71,11 @@ static int wait_for_event(int fd, s2n_blocked_status blocked)
 
 int negotiate(struct s2n_connection *conn, int fd)
 {
+    struct timespec start = { 0 }, end = { 0 };
     s2n_blocked_status blocked;
+
+    clock_gettime(CLOCK_MONOTONIC, &start);
+
     while (s2n_negotiate(conn, &blocked) != S2N_SUCCESS) {
         if (s2n_error_get_type(s2n_errno) != S2N_ERR_T_BLOCKED) {
             fprintf(stderr, "Failed to negotiate: '%s'. %s\n",
@@ -85,6 +90,11 @@ int negotiate(struct s2n_connection *conn, int fd)
             S2N_ERROR_PRESERVE_ERRNO();
         }
     }
+
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    uint64_t sec_delta = (uint64_t)end.tv_sec - (uint64_t)start.tv_sec;
+    uint64_t nsec_delta = (uint64_t)end.tv_nsec - (uint64_t)start.tv_nsec;
+    uint64_t negotiation_nsec = (sec_delta * 1000000000ull) + nsec_delta;
 
     /* Now that we've negotiated, print some parameters */
     int client_hello_version;
@@ -136,6 +146,8 @@ int negotiate(struct s2n_connection *conn, int fd)
     if (s2n_connection_is_session_resumed(conn)) {
         printf("Resumed session\n");
     }
+
+    printf("Negotiation time (nanoseconds): %lu\n", negotiation_nsec);
 
     return 0;
 }
