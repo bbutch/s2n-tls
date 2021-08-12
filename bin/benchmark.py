@@ -140,15 +140,15 @@ def run_benchmark(client_config, server_config):
         output = s2nc.stdout.splitlines()
 
         if (len(output) < 11) or\
-                (str(client_config["tls_version"]) not in output[4]) or \
-                (client_config["curve"] not in output[6]) or \
-                (client_config["kem"] not in output[7]) or \
-                (client_config["kem_group"] not in output[8]) or \
-                (client_config["cipher"] not in output[9]):
+                (str(client_config["tls_version"]) not in output[5]) or \
+                (client_config["curve"] not in output[7]) or \
+                (client_config["kem"] not in output[8]) or \
+                (client_config["kem_group"] not in output[9]) or \
+                (client_config["cipher"] not in output[10]):
             successful = False
             break
 
-        nano_time = int(output[10].split(": ")[1])
+        nano_time = int(output[12].split(": ")[1])
         benchmark.add_nano_time(nano_time)
         if r == client_config["rounds"] - 1:
             print("Current benchmark...complete!           ", end='\n', flush=True)
