@@ -14,6 +14,7 @@ set(INSTALL_CMAKE_DIR lib/cmake CACHE PATH "Installation directory for cmake fil
 
 option(S2N_NO_PQ "Disables all Post Quantum Crypto code. You likely want this
 for older compilers or uncommon platforms." OFF)
+option(S2N_ENABLE_X25519_FOR_BENCHMARKING "Set this if you want to enable x25519 for benchmarking." OFF)
 option(S2N_NO_PQ_ASM "Turns off the ASM for PQ Crypto even if it's available for the toolchain.
 You likely want this on older compilers." OFF)
 option(SEARCH_LIBCRYPTO "Set this if you want to let S2N search libcrypto for you,
@@ -347,6 +348,10 @@ endif()
 if(ADX_SUPPORTED)
     target_compile_options(${PROJECT_NAME} PUBLIC -DS2N_ADX)
     message(STATUS "Support for ADX assembly instructions detected")
+endif()
+
+if(S2N_ENABLE_X25519_FOR_BENCHMARKING)
+    target_compile_options(${PROJECT_NAME} PUBLIC -DS2N_ENABLE_X25519_FOR_BENCHMARKING)
 endif()
 
 if(S2N_HAVE_EXECINFO)

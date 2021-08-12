@@ -28,7 +28,6 @@ OBJS=$(SRCS:.c=.o)
 
 .PHONY : all
 all: bin
-	$(MAKE) -C tests
 
 bitcode :
 	${MAKE} -C tests/saw bitcode

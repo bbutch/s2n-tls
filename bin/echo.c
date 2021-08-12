@@ -17,6 +17,7 @@
 #include <poll.h>
 #include <netdb.h>
 
+#include <time.h>
 #include <unistd.h>
 #include <errno.h>
 #include <s2n.h>
@@ -194,7 +195,9 @@ int print_connection_info(struct s2n_connection *conn)
 
 int negotiate(struct s2n_connection *conn, int fd)
 {
+    struct timespec start = { 0 }, end = { 0 };
     s2n_blocked_status blocked;
+    clock_gettime(CLOCK_MONOTONIC, &start);
     while (s2n_negotiate(conn, &blocked) != S2N_SUCCESS) {
         if (s2n_error_get_type(s2n_errno) != S2N_ERR_T_BLOCKED) {
             fprintf(stderr, "Failed to negotiate: '%s'. %s\n",
@@ -210,7 +213,14 @@ int negotiate(struct s2n_connection *conn, int fd)
         }
     }
 
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    uint64_t sec_delta = (uint64_t)end.tv_sec - (uint64_t)start.tv_sec;
+    uint64_t nsec_delta = (uint64_t)end.tv_nsec - (uint64_t)start.tv_nsec;
+    uint64_t negotiation_nsec = (sec_delta * 1000000000ull) + nsec_delta;
+
     print_connection_info(conn);
+
+    printf("Negotiation time (nanoseconds): %lu\n", negotiation_nsec);
 
     printf("s2n is ready\n");
     return 0;
