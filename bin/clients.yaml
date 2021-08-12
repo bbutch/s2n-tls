@@ -1,5 +1,4 @@
-- {source: us_west_2a, rounds: 500, security_policy: default, curve: secp256r1, kem: NONE, kem_group: NONE, cipher: ECDHE-RSA-AES256-GCM-SHA384, tls_version: 33, wiki_color: black}
-- {source: us_west_2a, rounds: 500, security_policy: PQ-SIKE-TEST-TLS-1-0-2020-02, curve: secp256r1, kem: SIKEp434r2-KEM, kem_group: NONE, cipher: ECDHE-SIKE-RSA-AES256-GCM-SHA384, tls_version: 33, wiki_color: green}
-- {source: us_west_2a, rounds: 500, security_policy: KMS-PQ-TLS-1-0-2020-07, curve: secp256r1, kem: kyber512r2, kem_group: NONE, cipher: ECDHE-KYBER-RSA-AES256-GCM-SHA384, tls_version: 33, wiki_color: purple}
-- {source: us_west_2a, rounds: 500, security_policy: KMS-PQ-TLS-1-0-2020-02, curve: secp256r1, kem: BIKE1r2-Level1, kem_group: NONE, cipher: ECDHE-BIKE-RSA-AES256-GCM-SHA384, tls_version: 33, wiki_color: blue}
-
+- {source: localhost, rounds: 500, security_policy: default, curve: secp256r1, kem: NONE, kem_group: NONE, cipher: ECDHE-RSA-AES256-GCM-SHA384, tls_version: 33, wiki_color: black}
+- {source: localhost, rounds: 500, security_policy: PQ-SIKE-TEST-TLS-1-0-2020-02, curve: secp256r1, kem: SIKEp434r2-KEM, kem_group: NONE, cipher: ECDHE-SIKE-RSA-AES256-GCM-SHA384, tls_version: 33, wiki_color: green}
+- {source: localhost, rounds: 500, security_policy: KMS-PQ-TLS-1-0-2020-07, curve: secp256r1, kem: kyber512r2, kem_group: NONE, cipher: ECDHE-KYBER-RSA-AES256-GCM-SHA384, tls_version: 33, wiki_color: purple}
+- {source: localhost, rounds: 500, security_policy: KMS-PQ-TLS-1-0-2020-02, curve: secp256r1, kem: BIKE1r2-Level1, kem_group: NONE, cipher: ECDHE-BIKE-RSA-AES256-GCM-SHA384, tls_version: 33, wiki_color: blue}
